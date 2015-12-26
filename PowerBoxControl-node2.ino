@@ -133,7 +133,10 @@ pinMode(3, INPUT);
     gw.wait(RADIO_RESET_DELAY_TIME);
   	gw.present(RECHECK_SENSOR_VALUES, S_LIGHT); 
 
-  
+      //Night mode
+    gw.wait(RADIO_RESET_DELAY_TIME);
+    gw.present(NIGHTMODE_CHILD_ID, S_DOOR); 
+    
   	checkVoltAmpers.setInterval(2000, checkVoltAmpersData);
 
     lcd.clear();
@@ -154,9 +157,14 @@ pinMode(3, INPUT);
 
 void loop() {
 
-  
-  checkVoltAmpers.run();
 
+if (boolRecheckSensorValues)
+{
+  checkVoltAmpersData();
+  boolRecheckSensorValues = false;
+}
+
+  checkVoltAmpers.run();
 
   gw.process();
 
@@ -184,12 +192,13 @@ void loop() {
          
          if (message.getBool() == true)
          {
-
+            boolNightMode = true;
+            lcd.clear();            
          }
          else
          {
-
-            
+            boolNightMode = false;
+            displayCommon();
          }
 
      }
@@ -249,11 +258,10 @@ void checkVoltAmpersData()
        Serial.println(emon.powerFactor);                               
      #endif
 
-//float aa=7000;
 
-      //lcd.clear();
      
-               
+ if (!boolNightMode)
+ {              
       lcd.setFont(FONT_SIZE_LARGE);
       if ( emon.realPower < 7200 )
       {  
@@ -300,10 +308,10 @@ void checkVoltAmpersData()
       lcd.setCursor(111, 5);      
       lcd.print("V");         
      
+}
 
 
-
-  if (cycleCounter == DATASEND_DELAY)
+  if (cycleCounter == DATASEND_DELAY || boolRecheckSensorValues )
   {
     #ifdef NDEBUG
        Serial.println();
@@ -369,7 +377,7 @@ void checkVoltAmpersData()
               while( !gotAck && iCount > 0 )
                 {
                    // Send in the new temperature                  
-                   gw.send(AmpersMsg.set(emon.apparentPower,2), true);
+                   gw.send(RMSWattMsg.set(emon.apparentPower,2), true);
                     gw.wait(RADIO_RESET_DELAY_TIME);
                   iCount--;
                  }
