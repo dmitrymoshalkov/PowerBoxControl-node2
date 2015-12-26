@@ -1,9 +1,13 @@
 
+#include <Arduino.h>
+#include <Wire.h>
+#include <MicroLCD.h>
 #include <MySensor.h>  
 #include <SPI.h>
 #include <SimpleTimer.h>
 #include <avr/wdt.h>
 #include "EmonLib.h"
+
 
  #define NDEBUG                        // enable local debugging information
 
@@ -37,7 +41,7 @@
 /*****************************************************************************************************/
 /*                               				Common settings									      */
 /******************************************************************************************************/
-#define RADIO_RESET_DELAY_TIME 20 //Задержка между сообщениями
+#define RADIO_RESET_DELAY_TIME 50 //Задержка между сообщениями
 #define MESSAGE_ACK_RETRY_COUNT 5  //количество попыток отсылки сообщения с запросом подтверждения
 #define DATASEND_DELAY  10
 
@@ -58,6 +62,9 @@ EnergyMonitor emon;             // Create an instance
 
 SimpleTimer checkVoltAmpers;
 
+LCD_SSD1306 lcd; /* for SSD1306 OLED module */
+
+
 MyMessage VoltageMsg(CHILD_ID_VOLTMETER, V_VOLTAGE);
 MyMessage AmpersMsg(CHILD_ID_AMPERMETER, V_CURRENT);
 MyMessage WattMsg(CHILD_ID_WATTMETER, V_WATT);
@@ -77,6 +84,11 @@ void setup()
        Serial.println();
        Serial.println("Begin setup");
      #endif
+  lcd.begin();
+
+       lcd.setFont(FONT_SIZE_LARGE);
+        lcd.setCursor(11, 3);      
+        lcd.print("Starting..." ); //       
 
 pinMode(A0, INPUT);
 pinMode(A1, INPUT);
@@ -124,6 +136,8 @@ pinMode(3, INPUT);
   
   	checkVoltAmpers.setInterval(2000, checkVoltAmpersData);
 
+    lcd.clear();
+    displayCommon();
 
   	//Enable watchdog timer
   	wdt_enable(WDTO_8S);
@@ -140,6 +154,7 @@ pinMode(3, INPUT);
 
 void loop() {
 
+  
   checkVoltAmpers.run();
 
 
@@ -195,6 +210,21 @@ void loop() {
 } 
 
 
+void displayCommon()
+{
+      lcd.setFont(FONT_SIZE_SMALL);      
+      lcd.setCursor(10, 2);
+      lcd.print("power, W");   
+      lcd.setCursor(80, 2);
+      lcd.print("current");  
+      lcd.setCursor(0, 7);
+      lcd.print("rms power,W");   
+      lcd.setCursor(80, 7);
+      lcd.print("voltage");  
+
+          
+}
+
 void checkVoltAmpersData()
 {
 
@@ -219,6 +249,57 @@ void checkVoltAmpersData()
        Serial.println(emon.powerFactor);                               
      #endif
 
+//float aa=7000;
+
+      //lcd.clear();
+     
+               
+      lcd.setFont(FONT_SIZE_LARGE);
+      if ( emon.realPower < 7200 )
+      {  
+        lcd.clear(0,0,84, 20);                 
+        lcd.setCursor(0, 0);      
+        lcd.printLong(emon.realPower , 3 ); //  
+      }
+      if ( emon.apparentPower < 7200 )
+      {        
+        lcd.clear(0,40,84, 20);        
+        lcd.setCursor(0, 5);      
+        lcd.printLong(emon.apparentPower, 3 ); //
+      }
+      if ( emon.Irms < 33 )
+      {          
+        lcd.clear(85,0,43, 20);              
+        lcd.setCursor(80, 0);     
+        if ( emon.Vrms > 10) 
+        {
+          lcd.print(emon.Irms, 1  ); 
+        }
+        else
+        {
+          lcd.print(0.0, 1  );
+        }
+      }
+      if ( emon.Vrms < 300 )
+      {    
+        lcd.clear(85,40,43, 20);       
+        lcd.setCursor(81, 5);    
+        if ( emon.Vrms > 10 )
+        {    
+          lcd.print(emon.Vrms, 0  );      
+        } 
+        else
+        {
+          lcd.print(0);
+        }
+      }
+
+
+      lcd.setCursor(118, 0);      
+      lcd.print("A");              
+      lcd.setCursor(111, 5);      
+      lcd.print("V");         
+     
 
 
 
