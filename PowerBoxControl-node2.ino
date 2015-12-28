@@ -9,7 +9,7 @@
 #include "EmonLib.h"
 
 
- #define NDEBUG                        // enable local debugging information
+ //#define NDEBUG                        // enable local debugging information
 
 #define NODE_ID 195 //На даче поменять на 101
 
@@ -138,6 +138,10 @@ pinMode(3, INPUT);
     gw.present(NIGHTMODE_CHILD_ID, S_DOOR); 
     
   	checkVoltAmpers.setInterval(2000, checkVoltAmpersData);
+
+
+    gw.wait(RADIO_RESET_DELAY_TIME); 
+    gw.request(NIGHTMODE_CHILD_ID, V_TRIPPED); 
 
     lcd.clear();
     displayCommon();
