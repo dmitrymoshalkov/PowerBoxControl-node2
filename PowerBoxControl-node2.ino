@@ -184,7 +184,7 @@ if (boolRecheckSensorValues)
     return;
   }
 
-    if ( message.sensor == REBOOT_CHILD_ID && message.getBool() == true ) {
+    if ( message.sensor == REBOOT_CHILD_ID && message.getBool() == true && strlen(message.getString())>0 ) {
              wdt_enable(WDTO_30MS);
               while(1) {};
 
@@ -192,7 +192,7 @@ if (boolRecheckSensorValues)
      
 
 
-    if ( message.sensor == NIGHTMODE_CHILD_ID  ) {
+    if ( message.sensor == NIGHTMODE_CHILD_ID && strlen(message.getString())>0 ) {
          
          if (message.getBool() == true)
          {
@@ -208,7 +208,7 @@ if (boolRecheckSensorValues)
      }
 
 
-    if ( message.sensor == RECHECK_SENSOR_VALUES) {
+    if ( message.sensor == RECHECK_SENSOR_VALUES && strlen(message.getString())>0 ) {
          
          if (message.getBool() == true)
          {
