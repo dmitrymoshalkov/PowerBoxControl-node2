@@ -58,9 +58,13 @@ float lastAmpers = 0;
 float lastWatts = 0;
 float lastRMSWatts = 0;
 
+double sumOfWatts=0;
+
 EnergyMonitor emon;             // Create an instance
 
 SimpleTimer checkVoltAmpers;
+SimpleTimer counterkWh;
+
 
 LCD_SSD1306 lcd; /* for SSD1306 OLED module */
 
@@ -69,7 +73,7 @@ MyMessage VoltageMsg(CHILD_ID_VOLTMETER, V_VOLTAGE);
 MyMessage AmpersMsg(CHILD_ID_AMPERMETER, V_CURRENT);
 MyMessage WattMsg(CHILD_ID_WATTMETER, V_WATT);
 MyMessage RMSWattMsg(CHILD_ID_RMSWATTMETER, V_WATT);
-//MyMessage KwHMsg(CHILD_ID_WATTMETER_KWH, V_KWH);
+MyMessage KwHMsg(CHILD_ID_WATTMETER_KWH, V_KWH);
 
 
 
@@ -122,8 +126,8 @@ pinMode(3, INPUT);
     gw.present(CHILD_ID_RMSWATTMETER, S_POWER); 
 
   	//watt sensor
-    //gw.wait(RADIO_RESET_DELAY_TIME);
-  	//gw.present(CHILD_ID_WATTMETER_KWH, S_POWER); 
+    gw.wait(RADIO_RESET_DELAY_TIME);
+  	gw.present(CHILD_ID_WATTMETER_KWH, S_POWER); 
 
     //reboot sensor command
     gw.wait(RADIO_RESET_DELAY_TIME);
@@ -138,7 +142,7 @@ pinMode(3, INPUT);
     gw.present(NIGHTMODE_CHILD_ID, S_DOOR); 
     
   	checkVoltAmpers.setInterval(2000, checkVoltAmpersData);
-
+    counterkWh.setInterval(3600000, countkWh);
 
     gw.wait(RADIO_RESET_DELAY_TIME); 
     gw.request(NIGHTMODE_CHILD_ID, V_TRIPPED); 
@@ -161,6 +165,7 @@ pinMode(3, INPUT);
 
 void loop() {
 
+counterkWh.run();
 
 if (boolRecheckSensorValues)
 {
@@ -222,6 +227,27 @@ if (boolRecheckSensorValues)
         return;      
 } 
 
+void countkWh()
+{
+
+  double kwh = sumOfWatts/60/1000;  
+
+            //Отсылаем состояние сенсора с подтверждением получения
+            iCount = MESSAGE_ACK_RETRY_COUNT;
+
+              while( !gotAck && iCount > 0 )
+                {
+                   // Send in the new temperature                  
+                   gw.send(KwHMsg.set(kwh, 4), true); // Send kwh value to gw 
+                   gw.wait(RADIO_RESET_DELAY_TIME);
+                  iCount--;
+                 }
+
+                gotAck = false;
+           
+  sumOfWatts = 0;
+
+}
 
 void displayCommon()
 {
@@ -262,22 +288,25 @@ void checkVoltAmpersData()
        Serial.println(emon.powerFactor);                               
      #endif
 
+     if (emon.realPower < 0 || emon.Irms < 0.15 ) emon.realPower=0;
+     if (emon.Irms < 0.15 || (emon.Irms <= 0.2 && emon.realPower == 0))     emon.Irms=0;
 
-     
+    sumOfWatts = sumOfWatts + emon.realPower; //cpunt watts for kWh counter
+
  if (!boolNightMode)
  {              
       lcd.setFont(FONT_SIZE_LARGE);
       if ( emon.realPower < 7200 )
       {  
         lcd.clear(0,0,84, 20);                 
-        lcd.setCursor(0, 0);      
-        lcd.printLong(emon.realPower , 3 ); //  
+        lcd.setCursor(7, 0);      
+        lcd.print(emon.realPower , 1 ); //          lcd.printLong(emon.realPower , 3 );
       }
       if ( emon.apparentPower < 7200 )
       {        
         lcd.clear(0,40,84, 20);        
-        lcd.setCursor(0, 5);      
-        lcd.printLong(emon.apparentPower, 3 ); //
+        lcd.setCursor(7, 5);      
+        lcd.print(emon.apparentPower, 1 ); //lcd.printLong(emon.apparentPower, 3 );
       }
       if ( emon.Irms < 33 )
       {          
