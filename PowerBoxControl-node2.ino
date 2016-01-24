@@ -11,7 +11,7 @@
 
  //#define NDEBUG                        // enable local debugging information
 
-#define NODE_ID 195 //На даче поменять на 101
+#define NODE_ID 191 //На даче поменять на 101
 
 /******************************************************************************************************/
 /*                               				Сенсоры												  */
@@ -59,6 +59,8 @@ float lastWatts = 0;
 float lastRMSWatts = 0;
 
 double sumOfWatts=0;
+
+boolean bSendZeroVolts = false;
 
 EnergyMonitor emon;             // Create an instance
 
@@ -142,7 +144,7 @@ pinMode(3, INPUT);
     gw.present(NIGHTMODE_CHILD_ID, S_DOOR); 
     
   	checkVoltAmpers.setInterval(2000, checkVoltAmpersData);
-    counterkWh.setInterval(3600000, countkWh);
+    counterkWh.setInterval(3600000, countkWh); 
 
     gw.wait(RADIO_RESET_DELAY_TIME); 
     gw.request(NIGHTMODE_CHILD_ID, V_TRIPPED); 
@@ -342,6 +344,12 @@ void checkVoltAmpersData()
       lcd.print("V");         
      
 }
+
+  if (emon.Vrms < 100 && lastVolts >= 100 )
+  {
+      boolRecheckSensorValues = true;
+  }
+
 
 
   if (cycleCounter == DATASEND_DELAY || boolRecheckSensorValues )
